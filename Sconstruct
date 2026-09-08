@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+from SCons.Script import Environment, Glob
+import os
+
+env = Environment()
+
+# ---------------------------------------------------------
+# godot-cpp
+# ---------------------------------------------------------
+
+env.Append(CPPPATH=[
+    "godot-cpp/include",
+    "godot-cpp/gen/include",
+    "godot-cpp/gdextension"
+])
+
+# Link against compiled godot-cpp
+env.Append(LIBPATH=[
+    "godot-cpp/bin"
+])
+
+env.Append(LIBS=[
+    "libgodot-cpp.linux.template_debug.x86_64.a"
+])
+
+# ---------------------------------------------------------
+# Source files
+# ---------------------------------------------------------
+
+sources = Glob("src/*.cpp")
+
+# ---------------------------------------------------------
+# Platform
+# ---------------------------------------------------------
+
+target_path = "bin"
+
+if env["PLATFORM"] == "linux":
+    target = os.path.join(target_path, "libgodot_apng.so")
+
+elif env["PLATFORM"] == "windows":
+    target = os.path.join(target_path, "godot_apng.dll")
+
+elif env["PLATFORM"] == "darwin":
+    target = os.path.join(target_path, "libgodot_apng.dylib")
+
+else:
+    target = os.path.join(target_path, "libgodot_apng")
+
+# ---------------------------------------------------------
+# Build
+# ---------------------------------------------------------
+
+library = env.SharedLibrary(
+    target=target,
+    source=sources,
+)
+
+Default(library)

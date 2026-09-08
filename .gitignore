@@ -1,0 +1,13 @@
+# Misc
+.vscode/
+
+
+# Godot
+.godot/
+
+# Build output
+bin/
+
+# godot-cpp build output
+godot-cpp/bin/
+godot-cpp/build/
