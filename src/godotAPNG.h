@@ -24,10 +24,13 @@ struct APNGAnimation {
 class GodotAPNGParser : public Object {
 	GDCLASS(GodotAPNGParser, Object)
 public:
+	static Image::CompressMode compression;
 	GodotAPNGParser();
 	~GodotAPNGParser();
 	static Ref<SpriteFrames> APNGToSpriteFrames(PackedByteArray buffer,int fps=-1);
 	static Ref<SpriteFrames> APNGFileToSpriteFrames(String path,int fps = -1);
+	static Image::CompressMode GetCompression();
+	static void SetCompression(Image::CompressMode mode);
 protected:
     static void _bind_methods();
 private:

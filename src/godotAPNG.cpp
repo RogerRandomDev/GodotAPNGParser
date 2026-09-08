@@ -12,6 +12,7 @@ static const uint8_t PNG_SIGNATURE[8] = {
     0x0D, 0x0A, 0x1A, 0x0A
 };
 
+Image::CompressMode GodotAPNGParser::compression=Image::COMPRESS_MAX;
 
 GodotAPNGParser::GodotAPNGParser() {
 }
@@ -32,7 +33,26 @@ void GodotAPNGParser::_bind_methods() {
         &GodotAPNGParser::APNGFileToSpriteFrames,
         DEFVAL(-1)
     );
+
+    ClassDB::bind_static_method(
+        "GodotAPNGParser", 
+        D_METHOD("get_compression"),
+        &GodotAPNGParser::GetCompression
+    );
+    ClassDB::bind_static_method(
+        "GodotAPNGParser", 
+        D_METHOD("set_compression","mode"),
+        &GodotAPNGParser::SetCompression
+    );
 }
+
+Image::CompressMode GodotAPNGParser::GetCompression(){
+    return GodotAPNGParser::compression;
+}
+void GodotAPNGParser::SetCompression(Image::CompressMode mode){
+    GodotAPNGParser::compression=mode;
+}
+
 
 bool GodotAPNGParser::is_png(PackedByteArray buffer) {
 
@@ -735,7 +755,7 @@ Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
         if (frame.frame.is_null() || frame.frame->is_empty()) {
             continue;
         }
-
+        if(GodotAPNGParser::compression!=Image::COMPRESS_MAX) frame.frame->compress(GodotAPNGParser::compression);
 
         Ref<ImageTexture> texture =
             ImageTexture::create_from_image(
