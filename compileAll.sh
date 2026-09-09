@@ -23,7 +23,7 @@ echo "========================================"
 echo "Building godot-cpp"
 echo "========================================"
 
-cd "$GODOT_CPP"
+pushd godot-cpp
 
 
 # Linux
@@ -42,8 +42,7 @@ echo "Building godot-cpp: Windows release"
 scons target=template_release platform=windows api_version=4.5 use_mingw=yes
 
 
-cd ..
-
+popd
 
 # ============================================================
 # Build APNG extension

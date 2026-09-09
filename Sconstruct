@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from SCons.Script import Environment, Glob, ARGUMENTS, Command, Default, Exit
+from SCons.Script import Environment, Glob, ARGUMENTS, Command, Default, Exit, SConscript
 import os
 
 PROJECT_NAME = "godot_apng"
@@ -8,18 +8,17 @@ PROJECT_NAME = "godot_apng"
 GODOT_CPP = "godot-cpp"
 SOURCE_DIR = "src"
 
-
-
 OUTPUT_DIR = "project/addons/GodotAnimatedPNGParser"
+
 GDEXTENSION_FILE = os.path.join(
     OUTPUT_DIR,
     "GodotAPNGParser.gdextension"
 )
 
-OUTPUT_ENGINE_DIR = "/addons/GodotAnimatedPNGParser"
-
+OUTPUT_ENGINE_DIR = "addons/GodotAnimatedPNGParser"
 
 ENTRY_SYMBOL = "godot_apng_library_init"
+
 
 platform = ARGUMENTS.get("platform", "linux")
 arch = ARGUMENTS.get("arch", "x86_64")
@@ -30,11 +29,12 @@ if platform not in ["linux", "windows"]:
     Exit(1)
 
 
-# 
+# ============================================================
 # Environment
-# 
+# ============================================================
 
 env = SConscript("godot-cpp/SConstruct")
+
 
 # Windows cross compiler
 if platform == "windows":
@@ -50,26 +50,32 @@ env.Append(CPPPATH=[
     GODOT_CPP + "/gdextension"
 ])
 
-# 
+
+# ============================================================
 # Sources
-# 
+# ============================================================
 
 sources = Glob(
     SOURCE_DIR + "/*.cpp"
 )
 
-#
+
+# ============================================================
 # Documentation
-#
+# ============================================================
 
 if target in ["editor", "template_debug"]:
-    doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
+    doc_data = env.GodotCPPDocData(
+        "src/gen/doc_data.gen.cpp",
+        source=Glob("doc_classes/*.xml")
+    )
+
     sources.append(doc_data)
 
 
-# 
+# ============================================================
 # Find godot-cpp
-# 
+# ============================================================
 
 godot_cpp_bin = GODOT_CPP + "/bin"
 
@@ -77,7 +83,6 @@ if not os.path.isdir(godot_cpp_bin):
     print("ERROR: Missing godot-cpp/bin")
     Exit(1)
 
-godot_cpp_lib = None
 
 expected_name = (
     "libgodot-cpp."
@@ -94,10 +99,11 @@ expected_path = os.path.join(
     expected_name
 )
 
+
 if os.path.isfile(expected_path):
     godot_cpp_lib = expected_path
 
-if godot_cpp_lib is None:
+else:
     print("ERROR: Could not find:")
     print("  " + expected_path)
     print()
@@ -109,15 +115,15 @@ if godot_cpp_lib is None:
 
     Exit(1)
 
+
 print("Using godot-cpp:")
 print("  " + godot_cpp_lib)
 
 
-# 
+# ============================================================
 # Link godot-cpp
-# 
+# ============================================================
 
-# Link godot-cpp
 env.Append(
     LINKFLAGS=[
         "-Wl,--whole-archive",
@@ -127,21 +133,34 @@ env.Append(
 )
 
 
-# 
+# ============================================================
 # Output
-# 
+# ============================================================
 
 if platform == "linux":
 
     output_name = (
-        "GodotAPNGParser.linux.x86_64."+target+".so"
+        "libGodotAPNGParser."
+        + platform
+        + "."
+        + target
+        + "."
+        + arch
+        + ".so"
     )
 
 elif platform == "windows":
 
     output_name = (
-        "GodotAPNGParser.windows.x86_64."+target+".dll"
+        "libGodotAPNGParser."
+        + platform
+        + "."
+        + target
+        + "."
+        + arch
+        + ".dll"
     )
+
 
 target_library = os.path.join(
     OUTPUT_DIR,
@@ -149,11 +168,14 @@ target_library = os.path.join(
 )
 
 
-# 
+# ============================================================
 # Build extension
-# 
+# ============================================================
 
 library = env.SharedLibrary(
     target=target_library,
     source=sources
 )
+
+
+Default(library)
