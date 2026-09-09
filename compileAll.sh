@@ -88,11 +88,11 @@ reloadable = true
 
 [libraries]
 
-linux.debug.x86_64 = "res://$OUTPUT_ENGINE_DIR/libGodotAPNGParser.linux.template_debug.x86_64.so"
-linux.release.x86_64 = "res://$OUTPUT_ENGINE_DIR/libGodotAPNGParser.linux.template_release.x86_64.so"
+linux.debug.x86_64 = "./libGodotAPNGParser.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "./libGodotAPNGParser.linux.template_release.x86_64.so"
 
-windows.debug.x86_64 = "res://$OUTPUT_ENGINE_DIR/libGodotAPNGParser.windows.template_debug.x86_64.dll"
-windows.release.x86_64 = "res://$OUTPUT_ENGINE_DIR/libGodotAPNGParser.windows.template_release.x86_64.dll"
+windows.debug.x86_64 = "./libGodotAPNGParser.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "./libGodotAPNGParser.windows.template_release.x86_64.dll"
 EOF
 
 echo "Generated: $GDEXTENSION_FILE"
