@@ -8,29 +8,41 @@ PROJECT_NAME = "godot_apng"
 GODOT_CPP = "godot-cpp"
 SOURCE_DIR = "src"
 
-OUTPUT_DIR = "addons/GodotAnimatedPNGParser"
+
+
+OUTPUT_DIR = "project/addons/GodotAnimatedPNGParser"
 GDEXTENSION_FILE = os.path.join(
     OUTPUT_DIR,
     "GodotAPNGParser.gdextension"
 )
 
+OUTPUT_ENGINE_DIR = "/addons/GodotAnimatedPNGParser"
+
+
 ENTRY_SYMBOL = "godot_apng_library_init"
 
 platform = ARGUMENTS.get("platform", "linux")
 arch = ARGUMENTS.get("arch", "x86_64")
+target = ARGUMENTS.get("target", "template_debug")
 
 if platform not in ["linux", "windows"]:
     print("Unsupported platform: " + platform)
-    print("Use:")
-    print("    scons platform=linux")
-    print("    scons platform=windows")
     Exit(1)
+
 
 # 
 # Environment
 # 
 
-env = Environment()
+env = SConscript("godot-cpp/SConstruct")
+
+# Windows cross compiler
+if platform == "windows":
+    env["CC"] = "x86_64-w64-mingw32-gcc"
+    env["CXX"] = "x86_64-w64-mingw32-g++"
+    env["AR"] = "x86_64-w64-mingw32-ar"
+    env["RANLIB"] = "x86_64-w64-mingw32-ranlib"
+
 
 env.Append(CPPPATH=[
     GODOT_CPP + "/include",
@@ -38,54 +50,74 @@ env.Append(CPPPATH=[
     GODOT_CPP + "/gdextension"
 ])
 
+# 
+# Sources
+# 
+
 sources = Glob(
     SOURCE_DIR + "/*.cpp"
 )
 
+#
+# Documentation
+#
+
+if target in ["editor", "template_debug"]:
+    doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
+    sources.append(doc_data)
+
+
 # 
-# Find godot-cpp static library
+# Find godot-cpp
 # 
 
 godot_cpp_bin = GODOT_CPP + "/bin"
-godot_cpp_lib = None
 
 if not os.path.isdir(godot_cpp_bin):
     print("ERROR: Missing godot-cpp/bin")
     Exit(1)
 
-for filename in os.listdir(godot_cpp_bin):
+godot_cpp_lib = None
 
-    if not filename.endswith(".a"):
-        continue
+expected_name = (
+    "libgodot-cpp."
+    + platform
+    + "."
+    + target
+    + "."
+    + arch
+    + ".a"
+)
 
-    name = filename.lower()
+expected_path = os.path.join(
+    godot_cpp_bin,
+    expected_name
+)
 
-    if platform.lower() not in name:
-        continue
-
-    if arch.lower() not in name:
-        continue
-
-    godot_cpp_lib = os.path.join(
-        godot_cpp_bin,
-        filename
-    )
-
-    break
+if os.path.isfile(expected_path):
+    godot_cpp_lib = expected_path
 
 if godot_cpp_lib is None:
-    print(
-        "ERROR: Could not find godot-cpp library for "
-        + platform + " " + arch
-    )
+    print("ERROR: Could not find:")
+    print("  " + expected_path)
+    print()
+    print("Available libraries:")
+
+    for filename in os.listdir(godot_cpp_bin):
+        if filename.endswith(".a"):
+            print("  " + filename)
+
     Exit(1)
 
-print("Using godot-cpp: " + godot_cpp_lib)
+print("Using godot-cpp:")
+print("  " + godot_cpp_lib)
+
 
 # 
 # Link godot-cpp
 # 
 
+# Link godot-cpp
 env.Append(
     LINKFLAGS=[
         "-Wl,--whole-archive",
@@ -94,70 +126,34 @@ env.Append(
     ]
 )
 
+
 # 
 # Output
 # 
 
 if platform == "linux":
 
-    target = os.path.join(
-        OUTPUT_DIR,
-        "GodotAPNGParser.linux.x86_64.so"
+    output_name = (
+        "GodotAPNGParser.linux.x86_64."+target+".so"
     )
 
 elif platform == "windows":
 
-    target = os.path.join(
-        OUTPUT_DIR,
-        "GodotAPNGParser.windows.x86_64.dll"
+    output_name = (
+        "GodotAPNGParser.windows.x86_64."+target+".dll"
     )
+
+target_library = os.path.join(
+    OUTPUT_DIR,
+    output_name
+)
+
 
 # 
 # Build extension
 # 
 
 library = env.SharedLibrary(
-    target=target,
+    target=target_library,
     source=sources
 )
-
-# 
-# Generate .gdextension
-# 
-
-gdextension_contents = """[configuration]
-
-entry_symbol = "%s"
-compatibility_minimum = "4.5"
-reloadable = true
-
-[libraries]
-
-linux.debug.x86_64 = "res://%s/libGodotAPNGParser.linux.x86_64.so"
-linux.release.x86_64 = "res://%s/libGodotAPNGParser.linux.x86_64.so"
-
-windows.debug.x86_64 = "res://%s/libGodotAPNGParser.windows.x86_64.dll"
-windows.release.x86_64 = "res://%s/libGodotAPNGParser.windows.x86_64.dll"
-""" % (
-    ENTRY_SYMBOL,
-    OUTPUT_DIR,
-    OUTPUT_DIR,
-    OUTPUT_DIR,
-    OUTPUT_DIR
-)
-
-def generate_gdextension(target, source, env):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    with open(GDEXTENSION_FILE, "w") as f:
-        f.write(gdextension_contents)
-
-    print("Generated: " + GDEXTENSION_FILE)
-
-gdextension = Command(
-    GDEXTENSION_FILE,
-    [],
-    generate_gdextension
-)
-
-Default([library, gdextension])

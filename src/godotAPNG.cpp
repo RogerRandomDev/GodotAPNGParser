@@ -23,15 +23,19 @@ GodotAPNGParser::~GodotAPNGParser() {
 void GodotAPNGParser::_bind_methods() {
     ClassDB::bind_static_method(
         "GodotAPNGParser",
-        D_METHOD("apng_to_sprite_frames", "buffer","fps"),
+        D_METHOD("apng_to_sprite_frames", "buffer","fps","compression_mode","animation_name"),
         &GodotAPNGParser::APNGToSpriteFrames,
-        DEFVAL(-1)
+        DEFVAL(-1),
+        DEFVAL(5),
+        DEFVAL("default")
     );
     ClassDB::bind_static_method(
         "GodotAPNGParser",
-        D_METHOD("apng_file_to_sprite_frames", "path", "fps"),
+        D_METHOD("apng_file_to_sprite_frames", "path", "fps","compression_mode","animation_name"),
         &GodotAPNGParser::APNGFileToSpriteFrames,
-        DEFVAL(-1)
+        DEFVAL(-1),
+        DEFVAL(5),
+        DEFVAL("default")
     );
 
     ClassDB::bind_static_method(
@@ -223,6 +227,18 @@ APNGAnimationFrame GodotAPNGParser::_decode_frame(
     result.frame=image;
 
     return result;
+}
+
+Ref<Image> GodotAPNGParser::check_for_identical_frames(
+    Ref<Image> image,
+    Vector<APNGAnimationFrame> checkAgainst
+) {
+    Ref<Image> match_image;
+    for(int i=0;i<checkAgainst.size();i++){
+        if(checkAgainst.write[i].frame->get_data() == image->get_data()) return checkAgainst.write[i].frame;
+    }
+    return match_image;
+
 }
 
 
@@ -696,8 +712,12 @@ APNGAnimation GodotAPNGParser::parse_apng(
 
 Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
     PackedByteArray buffer,
-    int fps
+    int fps,
+    godot::Image::CompressMode compressionMode,
+    bool shareIdentical,
+    String animationName
 ) {
+    if(compressionMode < 0) compressionMode=GodotAPNGParser::compression;
 
     Ref<SpriteFrames> sprite_frames;sprite_frames.instantiate();
 
@@ -724,26 +744,28 @@ Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
         return sprite_frames;
     }
 
+    sprite_frames->remove_animation(StringName("default"));
     if (
         sprite_frames->has_animation(
-            StringName("default")
+            StringName(animationName)
         )
     ) {
         sprite_frames->remove_animation(
-            StringName("default")
+            StringName(animationName)
         );
     }
 
 
     sprite_frames->add_animation(
-        StringName("default")
+        StringName(animationName)
     );
-
 
     sprite_frames->set_animation_loop(
-        StringName("default"),
+        StringName(animationName),
         true
     );
+    
+
     float manualDelay=1.0;
     if(fps>0) manualDelay=(1.0/(float) fps);
 
@@ -751,13 +773,29 @@ Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
 
         APNGAnimationFrame &frame =
             animation.frames.write[i];
-
+        
         if (frame.frame.is_null() || frame.frame->is_empty()) {
             continue;
         }
-        if(GodotAPNGParser::compression!=Image::COMPRESS_MAX) frame.frame->compress(GodotAPNGParser::compression);
+        //if it ever errors, we cancel out of this with what we have
+        if(compressionMode!=Image::COMPRESS_MAX){
+            godot::Error compression_err = frame.frame->compress(compressionMode);
+            if(compression_err != godot::OK){
+                godot::UtilityFunctions::push_error("APNG Importer: Selected compression failed.");
+                return sprite_frames;
+            }
+        }
 
-        Ref<ImageTexture> texture =
+        // check for an identical frame. if we find one, use it instead.
+        // helps save some memory but is slow, dont use if you aren't pre-compiling.
+        if(shareIdentical){
+            Ref<Image> matched_frame = check_for_identical_frames(
+                frame.frame,animation.frames
+            );
+            if(!(matched_frame.is_null() || frame.frame->is_empty())) frame.frame=matched_frame;
+        }
+        
+        Ref<ImageTexture> texture = 
             ImageTexture::create_from_image(
                 frame.frame
             );
@@ -768,7 +806,7 @@ Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
         }
         
         sprite_frames->add_frame(
-            StringName("default"),
+            StringName(animationName),
             texture,
             fps==-1?frame.delay:manualDelay
         );
@@ -781,7 +819,10 @@ Ref<SpriteFrames> GodotAPNGParser::APNGToSpriteFrames(
 
 Ref<SpriteFrames> GodotAPNGParser::APNGFileToSpriteFrames(
     String path,
-    int fps
+    int fps,
+    godot::Image::CompressMode compressionMode,
+    bool shareIdentical,
+    String animationName
 ) {
     Ref<SpriteFrames> empty;
 
@@ -811,6 +852,5 @@ Ref<SpriteFrames> GodotAPNGParser::APNGFileToSpriteFrames(
     PackedByteArray buffer = file->get_buffer(
         file->get_length()
     );
-
-    return APNGToSpriteFrames(buffer, fps);
+    return APNGToSpriteFrames(buffer, fps, compressionMode,shareIdentical,animationName);
 }

@@ -1,4 +1,6 @@
 #include "godotAPNG.h"
+#include "APNGImporter.h"
+#include "APNGPlugin.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
@@ -10,19 +12,24 @@ using namespace godot;
 void initialize_godot_apng(
     ModuleInitializationLevel p_level
 ) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-        return;
+    if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+        ClassDB::register_class<APNGImporter>();
+        ClassDB::register_class<APNGEditorPlugin>();
+        EditorPlugins::add_by_type<APNGEditorPlugin>();
     }
-
-    ClassDB::register_class<GodotAPNGParser>();
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+        ClassDB::register_class<GodotAPNGParser>();
+    }
 }
 
 
 void uninitialize_godot_apng(
     ModuleInitializationLevel p_level
 ) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-        return;
+    if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+    }
+
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
     }
 }
 
@@ -40,6 +47,7 @@ GDExtensionBool GDE_EXPORT godot_apng_library_init(
         r_initialization
     );
 
+    //Parser & Impoter
     init_obj.register_initializer(
         initialize_godot_apng
     );

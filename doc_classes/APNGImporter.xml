@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="APNGImporter" inherits="EditorImportPlugin" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="animation/fps" type="int" setter="" getter="" default="0">
+			FPS to set the animation to. Set 0 for whatever the APNG provides.
+		</member>
+		<member name="animation/name" type="String" setter="" getter="" default="&quot;default&quot;">
+			Name for the animation this APNG will be store in for it's SpriteFrames object.
+		</member>
+		<member name="compression/mode" type="int" setter="" getter="" default="5">
+			Select compression mode for textures. S3TC recommended(lossless, significant memory reduction). NONE if others fail.
+		</member>
+		<member name="compression/shareIdenticalFrames" type="bool" setter="" getter="" default="false">
+			Checks if any frame matches the current frame to use instead. Can save memory, at the cost of longer import time.
+		</member>
+	</members>
+</class>

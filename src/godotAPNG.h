@@ -27,8 +27,8 @@ public:
 	static Image::CompressMode compression;
 	GodotAPNGParser();
 	~GodotAPNGParser();
-	static Ref<SpriteFrames> APNGToSpriteFrames(PackedByteArray buffer,int fps=-1);
-	static Ref<SpriteFrames> APNGFileToSpriteFrames(String path,int fps = -1);
+	static Ref<SpriteFrames> APNGToSpriteFrames(PackedByteArray buffer,int fps=-1,godot::Image::CompressMode compressionMode = godot::Image::COMPRESS_MAX,bool shareIdentical=false,String animationName="");
+	static Ref<SpriteFrames> APNGFileToSpriteFrames(String path,int fps = -1,godot::Image::CompressMode compressionMode = godot::Image::COMPRESS_MAX,bool shareIdentical=false,String animationName="");
 	static Image::CompressMode GetCompression();
 	static void SetCompression(Image::CompressMode mode);
 protected:
@@ -37,6 +37,7 @@ private:
 	static bool is_png(PackedByteArray buffer);
 	static APNGAnimation parse_apng(PackedByteArray buffer);
 	static APNGAnimationFrame _decode_frame(PackedByteArray buffer,int width,int height,int color_type);
+	static Ref<Image> check_for_identical_frames(Ref<Image> image,Vector<APNGAnimationFrame> checkAgainst);
 	static int paeth(int a,int b,int c);
 	static uint32_t chunk_name(PackedByteArray buffer,int pos);
 	static int u16(PackedByteArray buffer,int pos);
