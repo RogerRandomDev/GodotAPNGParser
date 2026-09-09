@@ -4,6 +4,7 @@
 
 # Godot
 .godot/
+/addons
 
 # Build output
 bin/
